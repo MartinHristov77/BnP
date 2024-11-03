@@ -1,0 +1,17 @@
+1) Најди ги имињата на сите филмови од жанрот Sci-Fi.
+π Title (π Genre_ID(σ Name = 'Sci-Fi' (Genres)) ⨝ Movies)
+
+2) Најди ги имињата и презимињата на сите личности кои биле дел од филм совреметраење подолго од 150 минути или имале буџет поголем од 200 000 000.
+πFirstname,Lastname (πPerson_ID(π Movie_ID (σ Budget>200000000 ∧ Runtime>150 (Movies)) ⨝ PersonsMovies)⨝Persons)
+
+3) Најди ги имињата на сите филмови од James Cameron со времетраење пократкоод 120 минути или подолго од 180 минути.
+π Title(σ Runtime<120 ∨ Runtime>180(π Movie_ID(π Person_ID(σ Firstname='James'∧ Lastname='Cameron'(Persons))⨝PersonsMovies)⨝Movies))
+
+4) Најди ги сите филмови кои имаат продолжение или се од жанрот Action.
+πTitle (π Genre_ID(σ Name='Action'(Genres))⨝Movies) ∪ πTitle (σSequelOf>0(Movies))
+
+5) Најди ги сите филмови кои имаат продолжение и се од жанрот Action.
+πTitle (π Genre_ID(σ Name='Action'(Genres))⨝Movies) ∩ πTitle (σSequelOf>0(Movies))
+
+6) Најди ги сите филмови кои немаат продолжениe (sequel).
+πTitle(Movies - (σSequelOf>0(Movies)))
