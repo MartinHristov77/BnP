@@ -15,3 +15,9 @@
 
 6) Најди ги сите филмови кои немаат продолжениe (sequel).
 πTitle(Movies - (σSequelOf>0(Movies)))
+
+7)Најди ги сите личности кои учествувале на филмови направени од Universal Studios од жанрот Action.
+πFirstname,Lastname(πPerson_ID((π Movie_ID (π Genre_ID(σ Name = 'Action' (Genres)) ⨝ Movies) ∩ π Movie_ID (σDistribution='Universal Studios'(Movies)))⨝PersonsMovies)⨝Persons)
+
+8)Најди ги сите личности кои не учествувале на филмови направени од 20th Century Fox.
+πFirstname,Lastname(Persons - (πPerson_ID(πMovie_ID(σDistribution='20th Century Fox'(Movies))⨝PersonsMovies)⨝Persons))
