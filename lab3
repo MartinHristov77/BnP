@@ -183,3 +183,72 @@ CREATE TABLE Transakcija_bankomat (
 Табелата Transakcija_bankomat:
 Чува податоци за трансакции направени преку банкомат.
 ID на банкомат: Ако банкоматот се избрише, полето ID_b се поставува на -1, како предефинирана вредност.
+
+
+CREATE TABLE Lice (
+    id INT PRIMARY KEY,
+    mbr CHAR(13) NOT NULL,  
+    ime VARCHAR(100) NOT NULL,  
+    prezime VARCHAR(100) NOT NULL,  
+    data_r DATE NOT NULL, 
+    vozrast INT NOT NULL,  
+    pol CHAR(1) CHECK (pol IN ('M', 'Z')) 
+);
+
+CREATE TABLE Med_lice (
+    id INT PRIMARY KEY,
+    staz INT NOT NULL 
+);
+
+CREATE TABLE Test (
+    id INT PRIMARY KEY, 
+    shifra INT,  
+    tip VARCHAR(100) NOT NULL, 
+    datum DATE NOT NULL,
+    rezultat VARCHAR(10) CHECK (rezultat IN ('pozitiven', 'negativen')), 
+    laboratorija VARCHAR(100) DEFAULT 'MANU' 
+);
+
+CREATE TABLE Vakcina (
+    shifra INT PRIMARY KEY CHECK (shifra BETWEEN 10 AND 30),
+    ime VARCHAR(100) NOT NULL,
+    proizvoditel VARCHAR(100) 
+);
+
+CREATE TABLE Vakcinacija (
+    id_lice INT,
+    id_med_lice INT,
+    shifra_vakcina INT,
+    PRIMARY KEY (id_lice, id_med_lice, shifra_vakcina),
+    FOREIGN KEY (id_lice) REFERENCES Lice(id) ON DELETE CASCADE, 
+    FOREIGN KEY (id_med_lice) REFERENCES Med_lice(id) ON DELETE CASCADE,  
+    FOREIGN KEY (shifra_vakcina) REFERENCES Vakcina(shifra) ON DELETE CASCADE 
+);
+
+CREATE TABLE Vakcinacija_datum (
+    id_lice INT,
+    id_med_lice INT,
+    shifra_vakcina INT,
+    datum DATE NOT NULL,  
+    PRIMARY KEY (id_lice, id_med_lice, shifra_vakcina, datum),
+    FOREIGN KEY (id_lice) REFERENCES Lice(id) ON DELETE CASCADE,  
+    FOREIGN KEY (id_med_lice) REFERENCES Med_lice(id) ON DELETE CASCADE,  
+    FOREIGN KEY (shifra_vakcina) REFERENCES Vakcina(shifra) ON DELETE CASCADE  
+);
+
+CREATE TABLE Vakcinacija_datum (
+    id_lice INT,
+    id_med_lice INT,
+    shifra_vakcina INT,
+    datum DATE NOT NULL,  
+    PRIMARY KEY (id_lice, id_med_lice, shifra_vakcina ),
+    FOREIGN KEY (id_lice) REFERENCES Vakcinacija(id_lice)
+     ON UPDATE CASCADE
+    ON DELETE SET DEFAULT,  
+    FOREIGN KEY (id_med_lice) REFERENCES Vakcinacija(id_med_lic)
+    ON UPDATE CASCADE
+    ON DELETE SET DEFAULT,  
+    FOREIGN KEY (shifra_vakcina) REFERENCES Vakcinacija(shifra_vak)
+     ON UPDATE CASCADE
+    ON DELETE SET DEFAULT  
+);
