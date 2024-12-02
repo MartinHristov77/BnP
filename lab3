@@ -1,0 +1,185 @@
+CREATE TABLE Vraboten (
+    ID INT PRIMARY KEY,
+    ime VARCHAR(100),
+    prezime VARCHAR(100),
+    datum_r DATE,
+    datum_v DATE,
+    obrazovanie VARCHAR(20) CHECK (obrazovanie IN ('PhD', 'MSc', 'High School', 'BSc')),
+    plata DECIMAL(10, 2),
+    CONSTRAINT datum_r_before_datum_v CHECK (datum_r < datum_v)
+);
+
+CREATE TABLE Shalterski_rabotnik (
+    ID INT PRIMARY KEY,
+    CONSTRAINT fk_shalterski_rabotnik_vraboten FOREIGN KEY (ID) REFERENCES Vraboten(ID)
+    ON DELETE CASCADE
+);
+
+CREATE TABLE Klient (
+    MBR_k INT PRIMARY KEY,
+    ime VARCHAR(100),
+    prezime VARCHAR(100),
+    adresa VARCHAR(255) DEFAULT 'Ne e navedena',
+    datum DATE
+);
+
+CREATE TABLE Smetka (
+    MBR_k_s INT,
+    broj INT,
+    valuta VARCHAR(10),
+    saldo DECIMAL(10, 2),
+    PRIMARY KEY (MBR_k_s, broj),
+    CONSTRAINT fk_smetka_klient FOREIGN KEY (MBR_k_s) REFERENCES Klient(MBR_k)
+    ON DELETE CASCADE
+);
+
+CREATE TABLE Transakcija_shalter (
+    ID INT PRIMARY KEY,
+    ID_v INT,
+    MBR_k INT,
+    MBR_k_s INT,
+    broj INT,
+    datum DATE CHECK (datum NOT BETWEEN '2020-12-30' AND '2021-01-14'),
+    suma DECIMAL(10, 2),
+    tip VARCHAR(10) CHECK (tip IN ('uplata', 'isplata')),
+    CONSTRAINT fk_transakcija_shalter_vraboten FOREIGN KEY (ID_v) REFERENCES Vraboten(ID)
+    ON DELETE CASCADE,
+    CONSTRAINT fk_transakcija_shalter_klient FOREIGN KEY (MBR_k) REFERENCES Klient(MBR_k)
+    ON DELETE CASCADE,
+    CONSTRAINT fk_transakcija_shalter_smetka FOREIGN KEY (MBR_k_s, broj) REFERENCES Smetka(MBR_k_s, broj)
+    ON DELETE CASCADE
+);
+
+CREATE TABLE Bankomat (
+    ID INT PRIMARY KEY,
+    lokacija VARCHAR(255) UNIQUE,
+    datum_p DATE,
+    zaliha DECIMAL(10, 2) CHECK (zaliha >= 0)
+);
+
+CREATE TABLE Transakcija_bankomat (
+    ID INT PRIMARY KEY,
+    MBR_k_s INT,
+    broj INT,
+    ID_b INT DEFAULT -1,
+    datum DATE CHECK (datum NOT BETWEEN '2020-12-30' AND '2021-01-14'),
+    suma DECIMAL(10, 2),
+    CONSTRAINT fk_transakcija_bankomat_smetka FOREIGN KEY (MBR_k_s, broj) REFERENCES Smetka(MBR_k_s, broj)
+    ON DELETE CASCADE,
+    CONSTRAINT fk_transakcija_bankomat_bankomat FOREIGN KEY (ID_b) REFERENCES Bankomat(ID)
+    ON DELETE SET DEFAULT
+);
+
+
+
+
+
+
+-- Табела за Вработени
+CREATE TABLE Vraboten (
+    ID INT PRIMARY KEY,
+    ime VARCHAR(100),
+    prezime VARCHAR(100),
+    datum_r DATE,
+    datum_v DATE,
+    obrazovanie VARCHAR(20) CHECK (obrazovanie IN ('PhD', 'MSc', 'High School', 'BSc')),
+    plata DECIMAL(10, 2),
+    CONSTRAINT datum_r_before_datum_v CHECK (datum_r < datum_v)  -- Датумот на раѓање мора да биде пред датумот на вработување
+);
+
+-- Табела за Шалтерски работници (поврзано со Вработен)
+CREATE TABLE Shalterski_rabotnik (
+    ID INT PRIMARY KEY,
+    CONSTRAINT fk_shalterski_rabotnik_vraboten FOREIGN KEY (ID) REFERENCES Vraboten(ID) 
+    ON DELETE CASCADE  -- Ако се избрише вработениот, шалтерскиот работник се брише
+);
+
+-- Табела за Клиенти
+CREATE TABLE Klient (
+    MBR_k INT PRIMARY KEY,
+    ime VARCHAR(100),
+    prezime VARCHAR(100),
+    adresa VARCHAR(255) DEFAULT 'Ne e navedena',  -- Адресата на клиентите има предефинирана вредност
+    datum DATE
+);
+
+-- Табела за Сметки
+CREATE TABLE Smetka (
+    MBR_k_s INT,
+    broj INT,
+    valuta VARCHAR(10),
+    saldo DECIMAL(10, 2),
+    PRIMARY KEY (MBR_k_s, broj),
+    CONSTRAINT fk_smetka_klient FOREIGN KEY (MBR_k_s) REFERENCES Klient(MBR_k)
+    ON DELETE CASCADE  -- Ако се избрише клиентот, неговите сметки ќе се избришат
+);
+
+-- Табела за Трансакции преку Шалтер
+CREATE TABLE Transakcija_shalter (
+    ID INT PRIMARY KEY,
+    ID_v INT,  -- Вработен кој ја извршил трансакцијата
+    MBR_k INT,  -- Клиент кој ја направил трансакцијата
+    MBR_k_s INT,  -- Сметка на клиентот
+    broj INT,  -- Број на сметка
+    datum DATE CHECK (datum NOT BETWEEN '2020-12-30' AND '2021-01-14'),  -- Датумот на трансакцијата не смее да биде во периодот од 30.12.2020 до 14.01.2021
+    suma DECIMAL(10, 2),
+    tip VARCHAR(10) CHECK (tip IN ('uplata', 'isplata')),  -- Типот на трансакцијата може да биде 'uplata' или 'isplata'
+    CONSTRAINT fk_transakcija_shalter_vraboten FOREIGN KEY (ID_v) REFERENCES Vraboten(ID)
+    ON DELETE CASCADE,  -- Ако се избрише вработениот, трансакциите што ги извршил се бришат
+    CONSTRAINT fk_transakcija_shalter_klient FOREIGN KEY (MBR_k) REFERENCES Klient(MBR_k)
+    ON DELETE CASCADE,  -- Ако се избрише клиентот, неговите трансакции се бришат
+    CONSTRAINT fk_transakcija_shalter_smetka FOREIGN KEY (MBR_k_s, broj) REFERENCES Smetka(MBR_k_s, broj)
+    ON DELETE CASCADE  -- Ако се избрише сметка, трансакцијата се брише
+);
+
+-- Табела за Банкомати
+CREATE TABLE Bankomat (
+    ID INT PRIMARY KEY,
+    lokacija VARCHAR(255) UNIQUE,  -- Локациите на банкоматите мора да бидат уникатни
+    datum_p DATE,
+    zaliha DECIMAL(10, 2) CHECK (zaliha >= 0)  -- Залихата не смее да биде помала од 0
+);
+
+-- Табела за Трансакции преку Банкомат
+CREATE TABLE Transakcija_bankomat (
+    ID INT PRIMARY KEY,
+    MBR_k_s INT,  -- Сметка на клиентот
+    broj INT,  -- Број на сметка
+    ID_b INT DEFAULT -1,  -- ID на банкомат, со предефинирана вредност -1 ако банкоматот не е поврзан
+    datum DATE CHECK (datum NOT BETWEEN '2020-12-30' AND '2021-01-14'),  -- Датумот на трансакцијата не смее да биде во периодот од 30.12.2020 до 14.01.2021
+    suma DECIMAL(10, 2),
+    CONSTRAINT fk_transakcija_bankomat_smetka FOREIGN KEY (MBR_k_s, broj) REFERENCES Smetka(MBR_k_s, broj)
+    ON DELETE CASCADE,  -- Ако се избрише сметка, трансакцијата се брише
+    CONSTRAINT fk_transakcija_bankomat_bankomat FOREIGN KEY (ID_b) REFERENCES Bankomat(ID)
+    ON DELETE SET DEFAULT  -- Ако се избрише банкомат, ID_b се поставува на -1
+);
+
+
+Објаснување на SQL изразите:
+Табелата Vraboten:
+Содржи податоци за вработените.
+Проверка на датумите: datum_r (датум на раѓање) мора да биде пред datum_v (датум на вработување).
+Образование: Полето obrazovanie има ограничување со можни вредности: 'PhD', 'MSc', 'High School', 'BSc'.
+
+Табелата Shalterski_rabotnik:
+Се чуваат податоци за шалтерските работници. Оваа табела е поврзана со табелата Vraboten преку странски клуч (ID).
+
+Табелата Klient:
+Содржи податоци за клиентите, а полето за adresa има подразбирана вредност 'Ne e navedena'.
+
+Табелата Smetka:
+Чува податоци за сметките на клиентите, вклучувајќи број на сметка и валута.
+Каскадно бришење: Ако се избрише клиентот, неговите сметки ќе бидат избришани.
+
+Табелата Transakcija_shalter:
+Чува информации за трансакции извршени преку шалтер.
+Периодични ограничувања: Датумите на трансакциите не смее да бидат помеѓу 30.12.2020 и 14.01.2021.
+Типови на трансакции: Трансакцијата може да биде uplata или isplata.
+
+Табелата Bankomat:
+Чува податоци за банкоматите, вклучувајќи уникатни локации и залиха.
+Залиха: Залихата не смее да биде помала од 0.
+
+Табелата Transakcija_bankomat:
+Чува податоци за трансакции направени преку банкомат.
+ID на банкомат: Ако банкоматот се избрише, полето ID_b се поставува на -1, како предефинирана вредност.
