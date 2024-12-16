@@ -1,0 +1,63 @@
+1111111
+SELECT DISTINCT v.ime, v.prezime
+FROM Vraboten v
+JOIN Transakcija_shalter ts ON v.ID = ts.ID_v
+JOIN Smetka s ON ts.MBR_k = s.MBR_k
+WHERE ts.tip = 'испаѓање'  -- ако типот на трансакцијата за исплата е 'испаѓање'
+  AND s.valuta = 'EUR'
+  AND ts.suma > 1000
+ORDER BY v.ime;
+
+222222222
+SELECT DISTINCT k.ime, k.prezime
+FROM Klient k
+JOIN Transakcija_bankomat tb ON k.MBR_k = tb.MBR_k_s
+JOIN Smetka s ON tb.MBR_k_s = s.MBR_k
+WHERE tb.suma > 400
+  AND s.valuta = 'USD'
+ORDER BY k.ime;
+
+33333333
+SELECT DISTINCT s.MBR_k, s.broj
+FROM Smetka s
+JOIN Transakcija_shalter ts ON s.MBR_k = ts.MBR_k
+JOIN Transakcija_bankomat tb ON s.MBR_k = tb.MBR_k_s
+WHERE s.valuta = 'MKD'
+  AND EXTRACT(YEAR FROM ts.datum) = 2021
+  AND EXTRACT(YEAR FROM tb.datum) = 2021
+ORDER BY s.broj;
+
+444444444
+SELECT DISTINCT k.ime, k.prezime
+FROM Klient k
+JOIN Transakcija_bankomat tb ON k.MBR_k = tb.MBR_k_s
+JOIN Smetka s ON tb.MBR_k_s = s.MBR_k
+LEFT JOIN Transakcija_shalter ts ON s.MBR_k = ts.MBR_k
+WHERE s.valuta = 'EUR'
+  AND ts.ID IS NULL  -- нема трансакции преку шалтер
+ORDER BY k.ime;
+
+55555555555
+SELECT ts.ID_v, ts.datum, COUNT(*) AS broj_transakcii
+FROM Transakcija_shalter ts
+GROUP BY ts.ID_v, ts.datum
+HAVING COUNT(*) = (
+  SELECT MAX(count_transakcii)
+  FROM (
+    SELECT COUNT(*) AS count_transakcii
+    FROM Transakcija_shalter
+    GROUP BY ID_v, datum
+  ) AS t
+)
+ORDER BY ts.ID_v;
+
+666666666666
+SELECT s.MBR_k, s.broj,
+       AVG(CASE WHEN ts.tip = 'испаѓање' AND EXTRACT(YEAR FROM ts.datum) = 2021 THEN ts.suma ELSE NULL END) AS prosjek_shalter,
+       AVG(CASE WHEN tb.suma IS NOT NULL AND EXTRACT(YEAR FROM tb.datum) = 2021 THEN tb.suma ELSE NULL END) AS prosjek_bankomat
+FROM Smetka s
+LEFT JOIN Transakcija_shalter ts ON s.MBR_k = ts.MBR_k
+LEFT JOIN Transakcija_bankomat tb ON s.MBR_k = tb.MBR_k_s
+WHERE s.valuta IN ('EUR', 'USD')
+GROUP BY s.MBR_k, s.broj
+ORDER BY s.broj;
