@@ -1,14 +1,18 @@
-1111111
+Да се напише DML израз со кој ќе се вратат имињата и презимињата на сите шалтерски работници кои имаат направено трансакција за исплата на средства во износ поголем од 
+1000 EUR од сметка која работи со валута EUR, подредени според името на шалтерските работници.
 SELECT DISTINCT v.ime, v.prezime
 FROM Vraboten v
+JOIN Shalterski_rabotnik sr ON v.ID = sr.ID
 JOIN Transakcija_shalter ts ON v.ID = ts.ID_v
 JOIN Smetka s ON ts.MBR_k = s.MBR_k
-WHERE ts.tip = 'испаѓање'  -- ако типот на трансакцијата за исплата е 'испаѓање'
+WHERE ts.tip = 'isplata'  
   AND s.valuta = 'EUR'
   AND ts.suma > 1000
 ORDER BY v.ime;
 
-222222222
+Да се напише DML израз со кој ќе се вратат имињата и презимињата на на сите клиенти кои имаат
+направено трансакција за исплата на средства преку банкомат во износ поголем од 400 USD од сметка која работи со валута USD, 
+подредени според името на клиентите.
 SELECT DISTINCT k.ime, k.prezime
 FROM Klient k
 JOIN Transakcija_bankomat tb ON k.MBR_k = tb.MBR_k_s
@@ -18,46 +22,80 @@ WHERE tb.suma > 400
 ORDER BY k.ime;
 
 33333333
-SELECT DISTINCT s.MBR_k, s.broj
+SELECT DISTINCT s.MBR_k, s.broj, s.valuta, s.saldo
 FROM Smetka s
 JOIN Transakcija_shalter ts ON s.MBR_k = ts.MBR_k
 JOIN Transakcija_bankomat tb ON s.MBR_k = tb.MBR_k_s
 WHERE s.valuta = 'MKD'
-  AND EXTRACT(YEAR FROM ts.datum) = 2021
-  AND EXTRACT(YEAR FROM tb.datum) = 2021
+    AND ts.tip = 'isplata'
+    AND ts.datum> '2021-01-01' AND ts.datum<'2021-12-31'
+    AND tb.datum> '2021-01-01' AND tb.datum<'2021-12-31'
 ORDER BY s.broj;
 
 444444444
-SELECT DISTINCT k.ime, k.prezime
+SELECT DISTINCT k.MBR_k, k.ime, k.prezime, k.adresa, k.datum
 FROM Klient k
 JOIN Transakcija_bankomat tb ON k.MBR_k = tb.MBR_k_s
 JOIN Smetka s ON tb.MBR_k_s = s.MBR_k
 LEFT JOIN Transakcija_shalter ts ON s.MBR_k = ts.MBR_k
 WHERE s.valuta = 'EUR'
-  AND ts.ID IS NULL  -- нема трансакции преку шалтер
+  AND ts.ID IS NULL
 ORDER BY k.ime;
 
 55555555555
-SELECT ts.ID_v, ts.datum, COUNT(*) AS broj_transakcii
-FROM Transakcija_shalter ts
-GROUP BY ts.ID_v, ts.datum
-HAVING COUNT(*) = (
-  SELECT MAX(count_transakcii)
-  FROM (
-    SELECT COUNT(*) AS count_transakcii
-    FROM Transakcija_shalter
-    GROUP BY ID_v, datum
-  ) AS t
-)
-ORDER BY ts.ID_v;
+WITH ShalterTrans AS (
+    SELECT
+        ts.ID_v AS vraboten,
+        ts.datum,
+        COUNT(*) AS broj_transakcii
+    FROM Transakcija_shalter ts
+    GROUP BY ts.ID_v, ts.datum),
+MaxTrans AS (
+SELECT vraboten,
+MAX(broj_transakcii) AS max_transakcii
+FROM ShalterTrans
+GROUP BY vraboten)
+SELECT st.vraboten, st.datum, st.broj_transakcii
+FROM ShalterTrans st
+JOIN MaxTrans mt ON st.vraboten = mt.vraboten AND st.broj_transakcii = mt.max_transakcii
+ORDER BY st.vraboten;
+
+
 
 666666666666
 SELECT s.MBR_k, s.broj,
-       AVG(CASE WHEN ts.tip = 'испаѓање' AND EXTRACT(YEAR FROM ts.datum) = 2021 THEN ts.suma ELSE NULL END) AS prosjek_shalter,
-       AVG(CASE WHEN tb.suma IS NOT NULL AND EXTRACT(YEAR FROM tb.datum) = 2021 THEN tb.suma ELSE NULL END) AS prosjek_bankomat
+    AVG(CASE WHEN tb.suma NOT NULL THEN tb.suma ELSE NULL END) AS prosechna_isplata_bankomat,
+    AVG(CASE WHEN ts.suma NOT NULL THEN ts.suma ELSE NULL END) AS prosechna_isplata_shalter
 FROM Smetka s
-LEFT JOIN Transakcija_shalter ts ON s.MBR_k = ts.MBR_k
-LEFT JOIN Transakcija_bankomat tb ON s.MBR_k = tb.MBR_k_s
+JOIN Transakcija_shalter ts ON s.MBR_k = ts.MBR_k
+JOIN Transakcija_bankomat tb ON s.MBR_k = tb.MBR_k_s
 WHERE s.valuta IN ('EUR', 'USD')
+    AND ts.tip = 'isplata'
+    AND tb.datum> '2021-01-01' AND tb.datum<'2021-12-31'
+    AND ts.datum> '2021-01-01' AND ts.datum<'2021-12-31' 
 GROUP BY s.MBR_k, s.broj
 ORDER BY s.broj;
+
+7. Да се напише DML израз со кој ќе се вратат имињата и презимињата на сите клиенти кои имаат направено една или повеќе шалтерски трансакции за исплата на средства и имаат исплатено сумарен износ поголем од 1000 EUR од сметка која работи со валута EUR. 
+Потребно е да се прикажат името и презимето на клиентот во една колона и адресата на клиентот во друг колона.
+SELECT K.ime || ' ' || K.prezime AS Ime_Prezime, K.adresa as Adresa
+FROM Klient K
+JOIN Transakcija_shalter TS ON K.MBR_k = TS.MBR_k
+JOIN Smetka S ON K.MBR_k = S.MBR_k
+WHERE TS.tip = 'isplata' 
+    AND S.valuta = 'EUR'
+GROUP BY K.MBR_k, K.ime, K.prezime, K.adresa
+HAVING SUM(TS.suma) > 1000;
+
+8. Да се напише DML израз со кој ќе се вратат матичните броеви, вкупниот број на 
+трансакции од било каков тип и било која валута, како и вкупната сума (вкупниот обрт на финансиски средства) 
+на сите клиенти кои што имаат направено вкупен обрт на финансиски средства поголем од 2500.
+SELECT k.mbr_k AS mbr_k,
+    COUNT(*) + 1 AS VkupnoTransakcii,
+    SUM(CASE WHEN ts.suma IS NOT NULL THEN ts.suma ELSE 0 END + CASE WHEN tb.suma IS NOT NULL THEN tb.suma ELSE 0 END) AS VkupnaSuma
+FROM Klient k
+LEFT JOIN Transakcija_shalter ts ON k.MBR_k = ts.MBR_k
+LEFT JOIN Transakcija_bankomat tb ON k.MBR_k = tb.MBR_k_s
+GROUP BY k.MBR_k
+HAVING SUM(CASE WHEN ts.suma IS NOT NULL THEN ts.suma ELSE 0 END + CASE WHEN tb.suma IS NOT NULL THEN tb.suma ELSE 0 END) > 2500
+ORDER BY k.MBR_k;
